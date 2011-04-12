@@ -1,0 +1,43 @@
+var ThrottleBucket = require('./throttlebucket').ThrottleBucket;
+
+class ThrottleTracker {
+  function initialize(bucketCount, time) {
+    this.bucketCount   = bucketCount;
+    this.lengthOfTime  = time;
+    this.timePerBucket = Math.floor(time / this.bucketCount);
+
+    this.buckets = [];
+    for (var i=0; i<bucketCount; i++) {
+      this.buckets.push(new ThrottleBucket()); 
+    }
+  }
+
+  function logRequest() {
+    var now = parseInt(Date.now());
+    this.clearOld(now);
+
+    var base = now % this.lengthOfTime;
+    var n    = Math.floor(base / this.timePerBucket);
+
+    if (this.buckets[n]) {
+      this.buckets[n].increment(now);
+    }
+  }
+
+  function getCount() {
+    var count = 0;
+    foreach (var b in this.buckets) {
+      count += b.count;
+    }
+    return count;
+  }
+
+  function clearOld(time) {
+    var threshold = time - this.lengthOfTime;
+    foreach (var b in this.buckets) {
+      if (b.lastRequestTime < threshold) {
+        b.clear();
+      }
+    }
+  }
+}

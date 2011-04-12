@@ -1,0 +1,27 @@
+
+var Throttler = require('./throttler').Throttler;
+var http = require('http');
+
+class ProxyServer {
+  static function start(serverConfig, clientConfig, filter) {
+    var serverPort = serverConfig.port || 8000;
+    var client     = http.createClient(clientConfig.port || 3000, clientConfig.host || 'localhost');
+
+    http.createServer(#(serverReq, serverRes) {
+      if (!filter(serverReq, serverRes)) { return; }
+
+      var clientReq = client.request(serverReq.method, serverReq.url, serverReq.headers);
+      clientReq.addListener("response", #(clientRes) {
+        serverRes.writeHeader(clientRes.statusCode, clientRes.headers);
+        clientRes.addListener("data", #{ serverRes.write($1, 'bindary'); });
+        clientRes.addListener("end", #{ serverRes.end(); });
+      });
+
+      serverReq.addListener("data", #{ clientReq.write($1, 'binary') });
+      serverReq.addListener("end", #{ clientReq.end(); });
+
+    }).listen(serverPort);
+
+    return http;
+  }
+}

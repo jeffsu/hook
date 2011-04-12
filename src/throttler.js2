@@ -1,0 +1,27 @@
+var http = require('http');
+var ThrottleTracker = require('./throttletracker').ThrottleTracker;
+
+class Throttler {
+  static var DEFAULT_BUCKET_COUNT = 10;
+  static var DEFAULT_TIME         = 60;
+
+  function initialize(count, seconds) {
+    this.bucketCount  = count || Throttler.DEFAULT_BUCKET_COUNT;
+    this.lengthOfTime = (seconds || Throttler.DEFAULT_TIME) * 100;
+    this.trackers = {};
+  }
+
+  function logRequest(key) {
+    var tracker = this.trackers[key];
+
+    if (!tracker) {
+      tracker = this.trackers[key] = new ThrottleTracker(this.bucketCount, this.lengthOfTime);
+    }
+
+    tracker.logRequest();
+  }
+
+  function getCount(key) {
+    return this.trackers[key] ? this.trackers[key].getCount() : 0;
+  }
+}
