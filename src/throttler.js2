@@ -1,5 +1,5 @@
-var http = require('http');
 var ThrottleTracker = require('./throttletracker').ThrottleTracker;
+var http            = require('http');
 
 class Throttler {
   static var DEFAULT_BUCKET_COUNT = 10;
@@ -11,17 +11,32 @@ class Throttler {
     this.trackers = {};
   }
 
-  function logRequest(key) {
-    var tracker = this.trackers[key];
+  function logRequest(key, limit) {
+    var tracker = this.getTracker(key);
 
     if (!tracker) {
-      tracker = this.trackers[key] = new ThrottleTracker(this.bucketCount, this.lengthOfTime);
+      tracker = this.trackers[key] = new ThrottleTracker(this.bucketCount, this.lengthOfTime, limit);
     }
 
     tracker.logRequest();
   }
 
+  function shouldDeny(key) {
+    var tracker = this.getTracker(key);
+    return tracker ? tracker.reachedLimit() : false;
+  }
+
+  function shouldAllow(key) {
+    return ! this.shouldDeny(key);
+  }
+
+
   function getCount(key) {
-    return this.trackers[key] ? this.trackers[key].getCount() : 0;
+    var tracker = this.getTracker(key);
+    return tracker ? tracker.getCount() : 0;
+  }
+
+  function getTracker(key) {
+    return this.trackers[key];
   }
 }

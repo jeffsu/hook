@@ -6,9 +6,14 @@ class ProxyServer {
   static function start(serverConfig, clientConfig, filter) {
     var serverPort = serverConfig.port || 8000;
     var client     = http.createClient(clientConfig.port || 3000, clientConfig.host || 'localhost');
+    filter         = filter || #{ return false };
 
     http.createServer(#(serverReq, serverRes) {
-      if (!filter(serverReq, serverRes)) { return; }
+      if (!filter(serverReq, serverRes)) { 
+        serverRes.writeHeader(403, {});
+        serverRes.end();
+        return; 
+      }
 
       var clientReq = client.request(serverReq.method, serverReq.url, serverReq.headers);
       clientReq.addListener("response", #(clientRes) {
