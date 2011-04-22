@@ -1,27 +1,45 @@
 
-var Throttler = require('./throttler').Throttler;
-var http = require('http');
+// var ps = new ProxyServer(client);
+// ps.push(new AddressThrottler());
+// ps.push(new HeaderThrottler());
 
 class ProxyServer {
-  static function start(serverConfig, clientConfig, filter) {
-    var serverPort = serverConfig.port || 8000;
-    var client     = http.createClient(clientConfig.port || 3000, clientConfig.host || 'localhost');
+  function initialize(client) {
+    this.client  = client; 
+    this.preFilters  = [];
+    this.postFilters = [];
+  }
 
-    http.createServer(#(serverReq, serverRes) {
-      if (!filter(serverReq, serverRes)) { return; }
+  function proxyRequest(serverReq, serverRes) {
+    foreaach (var f in this.preFilters) {
+      var val = f(serverReq, serverRes);
+      if (val == false) return;
+    }
 
-      var clientReq = client.request(serverReq.method, serverReq.url, serverReq.headers);
-      clientReq.addListener("response", #(clientRes) {
-        serverRes.writeHeader(clientRes.statusCode, clientRes.headers);
-        clientRes.addListener("data", #{ serverRes.write($1, 'bindary'); });
-        clientRes.addListener("end", #{ serverRes.end(); });
-      });
+    var clientReq = this.client.request(serverReq.method, serverReq.url, serverReq.headers);
+    clientReq.addListener("response", #(clientRes) {
+      foreach (var f in this.postFilters) {
+        var val = f(serverReq, serverRes, clientReq, clientRes);
+        if (val == false) return;
+      }
 
-      serverReq.addListener("data", #{ clientReq.write($1, 'binary') });
-      serverReq.addListener("end", #{ clientReq.end(); });
+      serverRes.writeHeader(clientRes.statusCode, clientRes.headers);
 
-    }).listen(serverPort);
+      clientRes.addListener("data", #{ serverRes.write($1, 'bindary'); });
+      clientRes.addListener("end",  #{ serverRes.end(); });
+    });
 
-    return http;
+    serverReq.addListener("data", #{ clientReq.write($1, 'binary') });
+    serverReq.addListener("end", #{ clientReq.end(); });
+  }
+
+  function push(filter) {
+    if (filter.pre) {
+      this.preFilters.push(#{ return filter.pre.apply(filter, arguments) });
+    }
+
+    if (filter.post) {
+      this.postFilters.push(#{ return filter.post.apply(filter, arguments) });
+    }
   }
 }

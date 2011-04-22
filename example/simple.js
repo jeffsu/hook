@@ -4,9 +4,9 @@ var Throttler   = require('hook').Throttler;
 var throttler = new Throttler(10, 60);
 function filter(req, res) {
   var ip = req.connection.remoteAddress;
-  throttler.logRequest(ip);
+  throttler.log(ip);
 
-  if (throttler.getCount(ip) > 100) {
+  if (throttler.count(ip) > 100) {
     console.log('Deny');
     res.writeHeader(404, {});
     res.end();
