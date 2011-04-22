@@ -1,7 +1,8 @@
 var ThrottleBucket = require('./throttlebucket').ThrottleBucket;
 
 class ThrottleTracker {
-  function initialize(bucketCount, time) {
+  function initialize(bucketCount, time, limit) {
+    this.limit         = limit;
     this.bucketCount   = bucketCount;
     this.lengthOfTime  = time;
     this.timePerBucket = Math.floor(time / this.bucketCount);
@@ -10,6 +11,10 @@ class ThrottleTracker {
     for (var i=0; i<bucketCount; i++) {
       this.buckets.push(new ThrottleBucket()); 
     }
+  }
+
+  function reachedLimit() {
+    return this.getCount() >= this.limit;
   }
 
   function logRequest() {
