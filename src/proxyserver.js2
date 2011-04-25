@@ -4,21 +4,22 @@
 // ps.push(new HeaderThrottler());
 
 class ProxyServer {
-  function initialize(client) {
-    this.client  = client; 
+  function initialize(port, host) {
+    this.client  = require('http').createClient(port, host); 
     this.preFilters  = [];
     this.postFilters = [];
   }
 
   function proxyRequest(serverReq, serverRes) {
-    foreaach (var f in this.preFilters) {
+    foreach (var f in this.preFilters) {
       var val = f(serverReq, serverRes);
       if (val == false) return;
     }
 
+    var self = this;
     var clientReq = this.client.request(serverReq.method, serverReq.url, serverReq.headers);
     clientReq.addListener("response", #(clientRes) {
-      foreach (var f in this.postFilters) {
+      foreach (var f in self.postFilters) {
         var val = f(serverReq, serverRes, clientReq, clientRes);
         if (val == false) return;
       }
@@ -33,7 +34,7 @@ class ProxyServer {
     serverReq.addListener("end", #{ clientReq.end(); });
   }
 
-  function push(filter) {
+  function addFilter(filter) {
     if (filter.pre) {
       this.preFilters.push(#{ return filter.pre.apply(filter, arguments) });
     }

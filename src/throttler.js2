@@ -24,6 +24,26 @@ class Throttler {
     tracker.logRequest();
   }
 
+  function startFlush(seconds) {
+    var interval = (seconds || 20) * 1000;
+    var self = this;
+    console.log(setInterval(#{ self.flush() }, interval));
+  }
+
+  function flush() {
+    console.log('flush');
+    var thresh = parseInt(Date.now()) - this.lengthOfTime;
+    for (var k in this.trackers) {
+      if (this.trackers.hasOwnProperty(k)) {
+        var tracker = this.trackers[k]; 
+        if (thresh > tracker.getLastRequestTime()) {
+          console.log('flushing');
+          delete this.trackers[k];
+        }
+      }
+    }
+  }
+
   function shouldDeny(key) {
     var tracker = this.getTracker(key);
     return tracker ? tracker.reachedLimit() : false;

@@ -1,0 +1,27 @@
+class ThrottleAdmin {
+
+  function initialize(throttler) {
+    this.throttler = throttler;
+
+    this.indexTmpl = <<END:jsml
+      %h1 Throttle Admin
+      - for (var k in this.trackers) {
+        %li
+          %span= k + ' ';
+          %span= this.trackers[k].getCount();
+    END
+  }
+
+  function listen(port) {
+    var self = this;
+    require('http').createServer(#{
+      self.handleRequest($1, $2); 
+    }).listen(port);
+  }
+
+  function handleRequest(req, res) {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(this.indexTmpl.result(this.throttler));
+  }
+
+}

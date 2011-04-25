@@ -14,12 +14,16 @@ class ThrottleTracker {
   }
 
   function reachedLimit() {
+    if (this.getCount() >= this.limit) {
+      var now = parseInt(Date.now());
+      this.clearOld(now);
+    }
+
     return this.getCount() >= this.limit;
   }
 
   function logRequest() {
     var now = parseInt(Date.now());
-    this.clearOld(now);
 
     var base = now % this.lengthOfTime;
     var n    = Math.floor(base / this.timePerBucket);
@@ -35,6 +39,16 @@ class ThrottleTracker {
       count += b.count;
     }
     return count;
+  }
+
+  function getLastRequestTime() {
+    var ret = 0;
+    foreach (var b in this.buckets) {
+      if (ret < b.lastRequestTime) {
+        ret = b.lastRequestTime;
+      }
+    }
+    return ret;
   }
 
   function clearOld(time) {
