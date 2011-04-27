@@ -6,6 +6,6 @@
   "os" : [ "linux", "darwin", "freebsd" ],
   "directories" : { "lib" : "./lib/", "example": "./example" },
   "main" : "./lib/hook",
-  "dependencies": { "js2" : ">=0.3.16" },
+  "dependencies": { "js2" : ">=0.3.18" },
   "engines" : { "node" : ">=0.1.97" }
 }
