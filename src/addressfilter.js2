@@ -7,21 +7,19 @@ class AddressFilter {
   function initialize(throttler, limit) {
     this.throttler = throttler || new Throttler(10, 60);
     this.limit     = limit || this.DEFAULT_LIMIT;
-    this.i = 0;
   }
 
   function pre(req, res) {
-    this.i += 1;
     var key = req.connection.remoteAddress;
 
     if (! this.throttler.shouldAllow(key)) {
-      console.log('Denied' + this.i);
+      this.throttler.deny();
       res.writeHeader(403, {});
       res.end();
       return false;
     } else {
+      this.throttler.allow();
       this.throttler.log(key, this.limit);
-      console.log('allowed');
     }
   }
 }

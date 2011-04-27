@@ -11,6 +11,8 @@ class Throttler {
     this.lengthOfTime = (seconds || Throttler.DEFAULT_TIME) * 100;
     this.limit        = limit || Throttler.DEFAULT_LIMIT;
     this.trackers = {};
+    this.allowCount = 0;
+    this.denyCount  = 0;
   }
 
   function log(key, limit) {
@@ -27,21 +29,27 @@ class Throttler {
   function startFlush(seconds) {
     var interval = (seconds || 20) * 1000;
     var self = this;
-    console.log(setInterval(#{ self.flush() }, interval));
+    setInterval(#{ self.flush() }, interval);
   }
 
   function flush() {
-    console.log('flush');
     var thresh = parseInt(Date.now()) - this.lengthOfTime;
     for (var k in this.trackers) {
       if (this.trackers.hasOwnProperty(k)) {
         var tracker = this.trackers[k]; 
         if (thresh > tracker.getLastRequestTime()) {
-          console.log('flushing');
           delete this.trackers[k];
         }
       }
     }
+  }
+
+  function allow() {
+    this.allowCount++;
+  }
+
+  function deny() {
+    this.denyCount++;
   }
 
   function shouldDeny(key) {

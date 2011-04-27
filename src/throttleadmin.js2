@@ -5,10 +5,22 @@ class ThrottleAdmin {
 
     this.indexTmpl = <<END:jsml
       %h1 Throttle Admin
-      - for (var k in this.trackers) {
-        %li
-          %span= k + ' ';
-          %span= this.trackers[k].getCount();
+      %div= "Allowed: " + this.allowCount;
+      %div= "Denied: "  + this.denyCount;
+      %table
+        %tr
+          %th Key
+          %th Count
+
+        - for (var k in this.trackers) {
+          %tr
+            %td= k;
+            %td
+              %a{ "href": "/keys/" + k }= this.trackers[k].getCount();
+    END
+
+    this.keyTmpl = <<END:jsml
+      %h1= this.key;
     END
   }
 
@@ -20,8 +32,14 @@ class ThrottleAdmin {
   }
 
   function handleRequest(req, res) {
+    var m = req.url.match(/\/keys\/(\.*)/);
     res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(this.indexTmpl.result(this.throttler));
+
+    if (m) {
+      res.end(this.keyTmpl.result({ key: m[1], tracker: this.throttler.trackers[m[1]] }));
+    } else {
+      res.end(this.indexTmpl.result(this.throttler));
+    }
   }
 
 }

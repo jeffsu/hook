@@ -1,5 +1,5 @@
 
-var hook = require('./lib/hook');
+var hook = require('../lib/hook');
 var http = require('http');
 
 // throttler 10 buckets over 10 seconds
@@ -21,4 +21,4 @@ var admin = new hook.ThrottleAdmin(throttler);
 admin.listen(8081);
 
 // flush irrelevant tracking every 10 seconds
-throttler.startFlush(10);
+// throttler.startFlush(10);
