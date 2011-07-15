@@ -1,5 +1,9 @@
 var ThrottleBucket = require('./throttlebucket').ThrottleBucket;
 
+/***
+ * Used by throttler to track an entity.  Uses
+ * multiple throttle buckets to handle this logic.
+ ***/
 class ThrottleTracker {
   function initialize(bucketCount, time, limit) {
     this.limit         = limit;

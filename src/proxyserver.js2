@@ -1,27 +1,71 @@
+var URL = require('url');
+
 class ProxyServer {
   function initialize(port, host) {
-    this.client  = require('http').createClient(port, host); 
+    this.client = require('http').createClient(port, host); 
+
+    this.client.addListener('error', function(err) {
+      console.log("Unable to connect to client");
+    });
+
     this.preFilters  = [];
     this.postFilters = [];
+    this.resets      = [];
+  }
+
+  function getProxiedRequest(request) {
+    var req = request.server.request;
+    return this.client.request(req.method, req.url, req.headers);
+  }
+
+  function passedPreFilters(request) {
+    foreach (var f in this.preFilters) {
+      var val = f(request);
+      if (val == false) return false;
+    }
+    return true;
+  }
+
+  function passedPostFilters(request) {
+    foreach (var f in this.postFilters) {
+      var val = f(request);
+      if (val == false) return false;
+    }
+    return true;
   }
 
   function proxyRequest(serverReq, serverRes) {
-    foreach (var f in this.preFilters) {
-      var val = f(serverReq, serverRes);
-      if (val == false) return;
-    }
+
+    var url     = URL.parse(serverReq.url, true);
+    var state   = {};
+    var request = {
+      server: {
+        request:  serverReq,
+        response: serverRes
+      },
+
+      proxied: {
+        request:  null,
+        response: null
+      },
+
+      state: {},
+      url:   URL.parse(serverReq.url, true)
+    };
+
+    if (!this.passedPreFilters(request)) return;
 
     var self = this;
-    var clientReq = this.client.request(serverReq.method, serverReq.url, serverReq.headers);
+    var clientReq = this.getProxiedRequest(request, url);
+    request.proxied.request = clientReq;
+
     clientReq.addListener("response", #(clientRes) {
-      foreach (var f in self.postFilters) {
-        var val = f(serverReq, serverRes, clientReq, clientRes);
-        if (val == false) return;
-      }
+      request.proxied.response = clientRes;
+      if (!self.passedPostFilters(request)) return;
 
       serverRes.writeHeader(clientRes.statusCode, clientRes.headers);
 
-      clientRes.addListener("data", #{ serverRes.write($1, 'bindary'); });
+      clientRes.addListener("data", #{ serverRes.write($1, 'binary'); });
       clientRes.addListener("end",  #{ serverRes.end(); });
     });
 
@@ -36,6 +80,16 @@ class ProxyServer {
 
     if (filter.post) {
       this.postFilters.push(#{ return filter.post.apply(filter, arguments) });
+    }
+
+    if (filter.reset) {
+      this.resets.push(#{ return filter.reset.apply(filter, arguments); });
+    }
+  }
+
+  function reset() {
+    foreach (var reset in this.resets) {
+      reset();
     }
   }
 }

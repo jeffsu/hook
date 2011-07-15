@@ -1,9 +1,27 @@
+var throttleLookup = {};
+var throttleList   = [];
+
+module.exports.track = function(name, throttler) {
+  throttleLookup[name] = throttler;
+  throttleList.push([ name, throttler ]);
+};
+
 class ThrottleAdmin {
 
   function initialize(throttler) {
-    this.throttler = throttler;
+    this.throttlers = throttler ? [ [ 'Throttler', throttler ] ] : throttleList;
 
-    this.indexTmpl = <<END:jsml
+    this.$$main = <<END:jsml
+      %h1 Throttle Admin
+      %h5 Throttlers
+      %ol
+        - for (var i=0; i<this.throttlers.length; i++) {
+          - var name      = this.throttlers[i][0];
+          - var throttler = this.throttlers[i][1];
+          %li= name;
+    END
+
+    this.$$throttler = <<END:jsml
       %h1 Throttle Admin
       %div= "Allowed: " + this.allowCount;
       %div= "Denied: "  + this.denyCount;
@@ -19,7 +37,7 @@ class ThrottleAdmin {
               %a{ "href": "/keys/" + k }= this.trackers[k].getCount();
     END
 
-    this.keyTmpl = <<END:jsml
+    this.$$key = <<END:jsml
       %h1= this.key;
     END
   }
@@ -32,14 +50,22 @@ class ThrottleAdmin {
   }
 
   function handleRequest(req, res) {
-    var m = req.url.match(/\/keys\/(\.*)/);
+    var m = req.url.match(/^(\w+)\/(.*)/);
     res.writeHead(200, { 'Content-Type': 'text/html' });
 
-    if (m) {
-      res.end(this.keyTmpl.result({ key: m[1], tracker: this.throttler.trackers[m[1]] }));
-    } else {
-      res.end(this.indexTmpl.result(this.throttler));
+    // default page
+    if (!m) {
+      res.end(this.$$main.result(this));
+    } 
+    
+    // has key and throttler name
+    else if (m[2]) {
+      res.end(this.$$key.result({ key: m[2], tracker: throttleLookup[m[1]].trackers[m[2]] }));
+    } 
+    
+    // hash throttler name
+    else if (m[1]) {
+      res.end(this.$$throttler.result({ key: m[2], tracker: throttleLookup[m[1]] }));
     }
   }
-
 }

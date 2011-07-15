@@ -9,8 +9,9 @@ class AddressFilter {
     this.limit     = limit || this.DEFAULT_LIMIT;
   }
 
-  function pre(req, res) {
-    var key = req.connection.remoteAddress;
+  function pre($r) {
+    var key = $r.server.request.connection.remoteAddress;
+    var res = $r.server.response;
 
     if (! this.throttler.shouldAllow(key)) {
       this.throttler.deny();

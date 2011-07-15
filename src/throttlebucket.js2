@@ -5,7 +5,7 @@ class ThrottleBucket {
   }
 
   function increment(time) {
-    this.lastRequestTime = parseInt(Date.now());
+    this.lastRequestTime = time;
     this.count++;
   }
 

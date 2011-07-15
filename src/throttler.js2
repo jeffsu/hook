@@ -1,20 +1,40 @@
 var ThrottleTracker = require('./throttletracker').ThrottleTracker;
-var http            = require('http');
 
+var allThrottlers = {};
+
+module.exports.trackThrottler = function (name, throttler) {
+  allThrottlers[name] = throttler;
+};
+
+/**
+ * Container for throttling entities by a key.
+ */
 class Throttler {
   static var DEFAULT_BUCKET_COUNT = 10;
   static var DEFAULT_TIME         = 60;
   static var DEFAULT_LIMIT        = 1000;
 
-  function initialize(count, seconds, limit) {
-    this.bucketCount  = count || Throttler.DEFAULT_BUCKET_COUNT;
-    this.lengthOfTime = (seconds || Throttler.DEFAULT_TIME) * 100;
+  /**
+   * @method {new Throttler(10, 60, 1000)}
+   * @param {integer} number of throttle buckets.  The higher the number, the better granularity sacrificing memory consumption
+   * @param {integer} length of time in seconds of throttling
+   * @param {integer} number of requests per amount of time.  This can be set on a per-key basis as well.
+   */
+  function initialize(bucketCount, seconds, limit) {
+    allThrottlers.push(this);
+    this.bucketCount  = bucketCount || Throttler.DEFAULT_BUCKET_COUNT;
+    this.lengthOfTime = (seconds || Throttler.DEFAULT_TIME) * 1000;
     this.limit        = limit || Throttler.DEFAULT_LIMIT;
-    this.trackers = {};
-    this.allowCount = 0;
-    this.denyCount  = 0;
+    this.trackers     = {};
+    this.allowCount   = 0;
+    this.denyCount    = 0;
   }
 
+  /**
+   * @method throttler.log("key", 10)
+   * @param {string} unique key to identify an entity to throttle
+   * @param {integer} the number of requests per amount of time per entity. Defaults to throttler limit.
+   */
   function log(key, limit) {
     var tracker = this.trackers[key];
     limit = limit || this.limit;
@@ -26,12 +46,21 @@ class Throttler {
     tracker.logRequest();
   }
 
+  /**
+   * Forces auto flushing of ThrottleTracker's by setting an interval.
+   * If using this, one could use a large number (1 day?) 
+   * @method throttler.startFlush(seconds);
+   */
   function startFlush(seconds) {
     var interval = (seconds || 20) * 1000;
     var self = this;
     setInterval(#{ self.flush() }, interval);
   }
 
+  /**
+   * Forces auto flushing of ThrottleTracker's.
+   * @method throttler.startFlush(seconds);
+   */
   function flush() {
     var thresh = parseInt(Date.now()) - this.lengthOfTime;
     for (var k in this.trackers) {
@@ -44,12 +73,38 @@ class Throttler {
     }
   }
 
+  /**
+   * Increments the allow count.  This is just for statistical purposes
+   * @method throttler.allow();
+   */
   function allow() {
     this.allowCount++;
   }
 
+  /**
+   * Increments the deny count.  This is just for statistical purposes
+   * @method throttler.deny();
+   */
   function deny() {
     this.denyCount++;
+  }
+
+  /**
+   * Shorthand method for logging and handling throttling
+   * @method throttler.handle();
+   * @param {string} 
+   * @param {integer} 
+   * @returns {boolean}
+   */
+  function handle(key, limit) {
+    var ret = this.shouldAllow(key);
+    if (ret) {
+      this.allow();
+      this.log(key, limit);
+    } else {
+      this.deny();
+    }
+    return ret;
   }
 
   function shouldDeny(key) {
