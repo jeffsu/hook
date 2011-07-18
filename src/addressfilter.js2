@@ -10,8 +10,8 @@ class AddressFilter {
   }
 
   function pre($r) {
-    var key = $r.server.request.connection.remoteAddress;
-    var res = $r.server.response;
+    var key = $r.frontend.request.connection.remoteAddress;
+    var res = $r.frontend.response;
 
     if (! this.throttler.shouldAllow(key)) {
       this.throttler.deny();
