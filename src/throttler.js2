@@ -91,7 +91,11 @@ class Throttler {
     var str = [];
 
     foreach (var b:i in tracker.buckets) {
-      str.push(i + ') : ' + b.count)
+      var pad = i <= 9 ? '0' + i : i;
+      str.push(pad + '] ')
+      for (var i=0; i<b.count; i++) {
+        str.push('*');
+      }
     }
     return str.join("\n");
   }
