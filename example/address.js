@@ -6,7 +6,6 @@ var http = require('http');
 
 // count, seconds, limit
 var throttler = new hook.Throttler(10, 10, 10); 
-console.log(throttler.limit);
 
 http.createServer(function (req, resp) {
   var ip = req.connection.remoteAddress;
@@ -25,6 +24,7 @@ http.createServer(function (req, resp) {
   console.log('-----------------------------------------');
 }).listen(8000);
 
+// Key press
 process.openStdin().on('keypress', function (chunk, key) {
   if (key.name != 'enter') {
     process.exit();

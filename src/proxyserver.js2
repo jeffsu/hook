@@ -86,6 +86,7 @@ class ProxyServer {
     if (filter.reset) {
       this.resets.push(#{ return filter.reset.apply(filter, arguments); });
     }
+
   }
 
   function reset() {

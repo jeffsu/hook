@@ -91,7 +91,13 @@ class Throttler {
     var str = [];
 
     foreach (var b:i in tracker.buckets) {
-      str.push(i + ') : ' + b.count)
+      var stars = [];
+      for (var j=0; j<b.count; j++) {
+        stars.push('*');
+      }
+      var bucketNumber = i+1;
+      var space = bucketNumber < 10 ? ' ' : '';
+      str.push(space + bucketNumber + ') : ' + stars.join(''))
     }
     return str.join("\n");
   }
