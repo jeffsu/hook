@@ -1,12 +1,17 @@
 require('tty').setRawMode(true);
-var hook = require('../lib/hook');
 
+var hook = require('../lib/hook');
 var http = require('http');
 
 
-// count, seconds, limit
-var throttler = new hook.Throttler(10, 10, 10); 
-console.log(throttler.limit);
+// buckets, seconds, limit
+var buckets = 10;
+var limit   = 10;
+var seconds = 30;
+console.log('buckets: ' + buckets);
+console.log('limit:   ' + limit);
+console.log('seconds: ' + seconds);
+var throttler = new hook.Throttler(limit, buckets, seconds); 
 
 http.createServer(function (req, resp) {
   var ip = req.connection.remoteAddress;
@@ -22,9 +27,11 @@ http.createServer(function (req, resp) {
 
   console.log('-----------------------------------------');
   console.log(throttler.toString(ip));
+  console.log('Count: ' + throttler.getCount(ip));
   console.log('-----------------------------------------');
 }).listen(8000);
 
+// Key press
 process.openStdin().on('keypress', function (chunk, key) {
   if (key.name != 'enter') {
     process.exit();

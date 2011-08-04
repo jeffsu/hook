@@ -2,46 +2,58 @@ Hook
 ----
 
 Hook is simple package for throttling (mainly http requests) by a given key and a limit using a rotating bucket algorithm.
-
     var Throttler = require('hook').Throttler;
+
+    var limit       = 10; // how many requests allowed
     var granularity = 20; // how many buckets
     var timeframe   = 60; // seconds
-    var t = new Throttler(granularity, timeframe);
+
+    var throttler = new Throttler(limit, granularity, timeframe);
 
     var key   = "1234";
-    var limit = 1;
+    var limit = 1
 
-    t.logRequest(key, limit);
-    console.log(t.shouldAllow()); // true
+    console.log(throttler.handle(key, limit)); // true
+    console.log(throttler.handle(key, limit)); // false
 
-    t.logRequest(key, limit);
-    console.log(t.shouldAllow()); // false
+Hook also comes with a filterable proxy server:
 
-Hook also comes with a filtered proxy server:
-
-    var ProxyServer = require('../lib/hook').ProxyServer;
-    var Throttler   = require('../lib/hook').Throttler;
+    var ProxyServer = require('hook').ProxyServer;
+    var Throttler   = require('hook').Throttler;
+    var http        = require('http');
     
-    var server    = { port: 8020 };
-    var proxy     = { port: 3000 };
+    // set throttling params
+    var limit       = 5; // how many requests allowed
+    var granularity = 10; // how many buckets
+    var timeframe   = 60; // seconds
     
-    var nBuckets  = 10;  // this is the length of time... granularity is set to timeframe / nBuckets
-    var timeframe = 60;  // timeframe for limit
-    var limit     = 50;   // number of request in a given timeFrame
-    
-    var throttler = new Throttler(nBuckets, timeframe);
+    // create throttler
+    var throttler = new Throttler(limit, granularity, timeframe);
+    var proxy     = new ProxyServer(80, 'www.twitter.com');
     
     // filter function
+    // possible hooks: pre, post, reset
     // return true  to allow proxied request
     // return false to deny it
-    function filter(req, res) {
-      // in this case, use ip address as key
-      var key = req.connection.remoteAddress; 
-      throttler.logRequest(key, limit);
-      return throttler.shouldAllow(key);
-    };
+    proxy.addFilter({ 
+      pre: function ($r) {
+        // in this case, use ip address as key
+        var key = $r.frontend.request.connection.remoteAddress; 
+        if (throttler.handle(key)) {
+          return true;
+        } else {
+          var response = $r.frontend.response;
+          response.writeHeader(403, {});
+          response.end('Denied!');
+          return false;
+        }
+      }
+    });
     
-    var server = ProxyServer.start(server, proxy, filter);
+    // http server listen on port 8080
+    http.createServer(function (req, resp) {
+      proxy.proxyRequest(req, resp);
+    }).listen(8000);
 
 Algorithm
 ---------
@@ -55,9 +67,11 @@ Algorithm
     1 req @ 0:01 -> Bucket1(count: 1) 1     Allowed
     1 req @ 0:01 -> Bucket1(count: 2) 2     Allowed
     1 req @ 0:02 -> Bucket1(count: 3) 3     Allowed
-    2 req @ 0:03 -> Bucket2(count: 2) 4     Allowed
-    1 req @ 0:03 -> Bucket2(count: 3) 4     DENIED
+    1 req @ 0:03 -> Bucket2(count: 2) 4     Allowed
+    1 req @ 0:03 -> Bucket2(count: 2) 5     Allowed
+    1 req @ 0:03 -> Bucket2(count: 3) 5     DENIED
+    0 req @ 0:04 -> Bucket1(count: 0) 3     Bucket1 resetted
     1 req @ 0:05 -> Bucket1(count: 1) 4     Allowed
-    1 req @ 0:06 -> Bucket1(count: 1) 4     Allowed
+    1 req @ 0:06 -> Bucket1(count: 1) 5     Allowed
 
 

@@ -6,7 +6,7 @@ var http = require('http');
 var throttler = new hook.Throttler(10, 10); 
 
 // proxy
-var proxy = new hook.ProxyServer(3000, 'localhost');
+var proxy = new hook.ProxyServer(80, 'www.twitter.com');
 
 // add ip address filter
 proxy.addFilter(new hook.AddressFilter(throttler, 10));
@@ -14,11 +14,8 @@ proxy.addFilter(new hook.AddressFilter(throttler, 10));
 // http server listen on port 8080
 http.createServer(function (req, resp) {
   proxy.proxyRequest(req, resp);
-}).listen(8080);
+}).listen(8000);
 
 // Run throttle admin on port 8081
 var admin = new hook.ThrottleAdmin(throttler);
-admin.listen(8081);
-
-// flush irrelevant tracking every 10 seconds
-// throttler.startFlush(10);
+admin.listen(8001);
