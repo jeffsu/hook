@@ -6,12 +6,14 @@ var http = require('http');
 
 // buckets, seconds, limit
 var buckets = 10;
-var limit   = 10;
-var seconds = 30;
-console.log('buckets: ' + buckets);
+var seconds = 10;
+var limit   = 20;
+
 console.log('limit:   ' + limit);
+console.log('buckets: ' + buckets);
 console.log('seconds: ' + seconds);
-var throttler = new hook.Throttler(limit, buckets, seconds); 
+
+var throttler = new hook.Throttler(buckets, seconds, limit); 
 
 http.createServer(function (req, resp) {
   var ip = req.connection.remoteAddress;
@@ -25,6 +27,7 @@ http.createServer(function (req, resp) {
     resp.end("denied");
   }
 
+  console.log("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
   console.log('-----------------------------------------');
   console.log(throttler.toString(ip));
   console.log('Count: ' + throttler.getCount(ip));
@@ -42,9 +45,9 @@ process.openStdin().on('keypress', function (chunk, key) {
   request.end();
   request.on('response', function (resp) {
     if (resp.statusCode == 200) {
-      console.log('allowed!');
+      console.log('\033[32mALLOWED!\033[m');
     } else {
-      console.log('denied!');
+      console.log('\033[31mDENIED!\033[m');
     }
   });
 });
