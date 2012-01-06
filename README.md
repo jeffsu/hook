@@ -1,77 +1,113 @@
 Hook
-----
+====
 
-Hook is simple package for throttling (mainly http requests) by a given key and a limit using a rotating bucket algorithm.
-    var Throttler = require('hook').Throttler;
+Hook is a simple node package used for counting unique occurances (by key) in a window of time 
+that performs and has a low memory footprint.  It works with multiple instances of node if used in 
+conjunction with redis.
 
-    var limit       = 10; // how many requests allowed
-    var granularity = 20; // how many buckets
-    var timeframe   = 60; // seconds
+This allows for throttling and statistics tracking over a period of time.
 
-    var throttler = new Throttler(limit, granularity, timeframe);
+Use Cases
+=========
 
-    var key   = "1234";
-    var limit = 1
+  * tracking request count by url, ip, etc.. over a specific amount of time (minute, day, hour, etc...)
+  * throttling users based on the same principles.
 
-    console.log(throttler.handle(key, limit)); // true
-    console.log(throttler.handle(key, limit)); // false
+Examples
+========
 
-Hook also comes with a filterable proxy server:
+*middleware*
 
-    var ProxyServer = require('hook').ProxyServer;
-    var Throttler   = require('hook').Throttler;
-    var http        = require('http');
-    
-    // set throttling params
-    var limit       = 5; // how many requests allowed
-    var granularity = 10; // how many buckets
-    var timeframe   = 60; // seconds
-    
-    // create throttler
-    var throttler = new Throttler(limit, granularity, timeframe);
-    var proxy     = new ProxyServer(80, 'www.twitter.com');
-    
-    // filter function
-    // possible hooks: pre, post, reset
-    // return true  to allow proxied request
-    // return false to deny it
-    proxy.addFilter({ 
-      pre: function ($r) {
-        // in this case, use ip address as key
-        var key = $r.frontend.request.connection.remoteAddress; 
-        if (throttler.handle(key)) {
-          return true;
-        } else {
-          var response = $r.frontend.response;
-          response.writeHeader(403, {});
-          response.end('Denied!');
-          return false;
-        }
-      }
-    });
-    
-    // http server listen on port 8080
-    http.createServer(function (req, resp) {
-      proxy.proxyRequest(req, resp);
-    }).listen(8000);
+Throttle by ip address
 
-Algorithm
----------
+   var hook    = require('hook');
+   var connect = require('connect');
 
-    Timeframe: 4 seconds
-    Buckets:   2 (2 seconds per bucket)
-    Limit:     5 requests
+   var IP_LIMIT = 1000;
+   var IP_PER   = "day"; // hour or minute
 
-    Request Time    Bucket #          Total Status
-    -------------------------------------------------
-    1 req @ 0:01 -> Bucket1(count: 1) 1     Allowed
-    1 req @ 0:01 -> Bucket1(count: 2) 2     Allowed
-    1 req @ 0:02 -> Bucket1(count: 3) 3     Allowed
-    1 req @ 0:03 -> Bucket2(count: 2) 4     Allowed
-    1 req @ 0:03 -> Bucket2(count: 2) 5     Allowed
-    1 req @ 0:03 -> Bucket2(count: 3) 5     DENIED
-    0 req @ 0:04 -> Bucket1(count: 0) 3     Bucket1 resetted
-    1 req @ 0:05 -> Bucket1(count: 1) 4     Allowed
-    1 req @ 0:06 -> Bucket1(count: 1) 5     Allowed
+   var app = connect(
+     hook.middleware.throttleIP(IP_LIMIT, IP_PER) 
+   ); 
 
+Count urls by day and generate a realtime report:
+
+   var app = express.createServer(
+     hook.middleware.countURL("day")
+   )
+
+   app.get('/stats', function(req, res, next) { 
+     req.writeHead(200, { "Content-type": "text/html" });
+     req.end(hook.middleware.htmlTable();
+   });
+
+More specific throttling
+
+   // throttle by url.  
+   // A url can only be visited 10 times in an hour
+   // hour on minute granularity
+   connect(
+     hook.middleware.throttle({
+       limit:  10,
+       buckets: 60,
+       seconds: 60,
+       prefix:  "ip"
+     }, function (req) { return req.url; })
+   );
+
+RangeCounter API
+================
+
+Range counters are used for collecting data in a sliding window.  They are not meant to be 
+persistent.  Instead, they are a snapshot of statistical data.  They are a few concepts that 
+need to be defined:
+
+  * buckets: this is the number of containers which the counters keep.  They
+    represent a period of time in which counts/keys fall into.
+  * time per bucket: this is the number of seconds each bucket should represent. 
+    For instance: 24 buckets at 3600 seconds each will keep track of data for a day in 
+    hourly increments.
+
+*Example*
+
+Say we want to limit the number of times a user can log in a 10 minute time period:
+
+    var redis = require('redis').createClient();
+
+    var buckets = 10;
+    var seconds = 60;
+    var prefix  = "login:users"; // for redis
+    var users   = new hook.RangeCounter(buckets, seconds, prefix);
+    var limit   = 100;
+
+    function userLoggedIn(username) {
+      users.inc(username); 
+    }
+
+    function canUserLogin(username) {
+      return users.getCount(username) < limit;
+    }
+
+    // sync counter data to redis (prefix key is "login:users");
+    // if you have multiple node instances running, they will sync up
+    // to each other every 5 seconds
+    setInterval(function () { hook.RangeCounter.sync(redis, users) }, 5000);
+
+*new hook.RangeCounter(buckets, seconds, prefix)*
+
+Instantiates a range counter.
+Inputs:
+
+  * buckets: the number of buckets to store counts (more for more granularity
+  * seconds: the number of seconds each bucket represents
+  * prefix: the prefix used for keys in redis
+
+*counter.inc(key)*
+Increments counter for a specific key (eg. ip address, url)
+
+*counter.getCount(key)*
+Returns integer for the count of a key
+
+*counter.getCounts()*
+Returns a hash where the keys are the keys and the counts are the values.
 

@@ -1,4 +1,4 @@
-export class Range {
+export class RangeCounter {
   private {
     var MAX_BUCKETS = 20;
     var BUCKET_TIME = 60 / MAX_BUCKETS;
@@ -8,8 +8,8 @@ export class Range {
     var SEC_IN_A_DAY = 60 * 60 * 24;
   }
 
-  // redis, <prefix1>, <counter1>, <prefix2>, <counter2>
-  static function flush() {
+  // redis, <counter1>, <counter2>
+  static function sync() {
     var redis = arguments[0];
     var commands = [];
     var expires  = [];
@@ -58,6 +58,22 @@ export class Range {
     this.buckets    = [ [{}, {}] ];
   }
 
+  // buckets
+  function getCounts() {
+    this.checkBuckets();
+    var ret = {};
+    foreach (var b in this.buckets) {
+      if (!b) continue;
+      var bucket = b[SYNC_IDX];
+      for (var key in bucket) ret[key] = bucket[key] + (ret[key] || 0);
+
+      bucket = b[CURRENT_IDX];
+      for (var key in bucket) ret[key] = bucket[key] + (ret[key] || 0);
+    }
+
+    return ret;
+  }
+
   // returns now in seconds
   function getNow() {
     return Math.floor((new Date).getTime() / ONE_SEC);
@@ -98,6 +114,10 @@ export class Range {
 
   // increment a key
   function increment(key) {
+    this.incrementBy(key, 1);
+  }
+
+  function inc(key) {
     this.incrementBy(key, 1);
   }
 
