@@ -1,6 +1,6 @@
 { "name" : "hook",
   "description" : "NodeJS Throttler",
-  "version" : "0.0.5.pre1",
+  "version" : "0.0.5-pre2",
   "author" : "Jeff Su",
   "repository" : { "type" : "git" , "url" : "git://github.com/jeffsu/hook.git" },
   "os" : [ "linux", "darwin", "freebsd" ],

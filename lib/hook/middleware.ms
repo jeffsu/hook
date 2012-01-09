@@ -17,7 +17,7 @@ exports.print = #{
 };
 
 exports.htmlTable = #{
-  var table = [ "<table>" ];
+  var table = [ "<table class='zebra-striped bordered-table'>" ];
   foreach (var counter in counters) {
     table.push("<tr><th colspan=2>" + counter.prefix + "</th></tr>");
     var counts = counter.getCounts();
