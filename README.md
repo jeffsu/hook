@@ -20,26 +20,26 @@ Examples
 
 Throttle by ip address
 
-   var hook    = require('hook');
-   var connect = require('connect');
+    var hook    = require('hook');
+    var connect = require('connect');
 
-   var IP_LIMIT = 1000;
-   var IP_PER   = "day"; // hour or minute
+    var IP_LIMIT = 1000;
+    var IP_PER   = "day"; // hour or minute
 
-   var app = connect(
-     hook.middleware.throttleIP(IP_LIMIT, IP_PER) 
-   ); 
+    var app = connect(
+      hook.middleware.throttleIP(IP_LIMIT, IP_PER) 
+    ); 
 
 Count urls by day and generate a realtime report:
 
-   var app = express.createServer(
-     hook.middleware.countURL("day")
-   )
+    var app = express.createServer(
+      hook.middleware.countURL("day")
+    );
 
-   app.get('/stats', function(req, res, next) { 
-     req.writeHead(200, { "Content-type": "text/html" });
-     req.end(hook.middleware.htmlTable();
-   });
+    app.get('/stats', function(req, res, next) { 
+      req.writeHead(200, { "Content-type": "text/html" });
+      req.end(hook.middleware.htmlTable();
+    });
 
 More specific throttling
 
