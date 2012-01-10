@@ -16,7 +16,7 @@ Use Cases
 Examples
 ========
 
-*middleware*
+**middleware**
 
 Throttle by ip address
 
@@ -68,7 +68,7 @@ need to be defined:
     For instance: 24 buckets at 3600 seconds each will keep track of data for a day in 
     hourly increments.
 
-*Example*
+**Example**
 
 Say we want to limit the number of times a user can log in a 10 minute time period:
 
@@ -93,7 +93,7 @@ Say we want to limit the number of times a user can log in a 10 minute time peri
     // to each other every 5 seconds
     setInterval(function () { hook.RangeCounter.sync(redis, users) }, 5000);
 
-*new hook.RangeCounter(buckets, seconds, prefix)*
+**new hook.RangeCounter(buckets, seconds, prefix)**
 
 Instantiates a range counter.
 Inputs:
@@ -102,15 +102,15 @@ Inputs:
   * seconds: the number of seconds each bucket represents
   * prefix: the prefix used for keys in redis
 
-*counter.inc(key)*
+**counter.inc(key)**
 
 Increments counter for a specific key (eg. ip address, url)
 
-*counter.getCount(key)*
+**counter.getCount(key)**
 
 Returns integer for the count of a key
 
-*counter.getCounts()*
+**counter.getCounts()**
 
 Returns a hash where the keys are the keys and the counts are the values.
 
