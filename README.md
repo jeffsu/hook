@@ -43,17 +43,17 @@ Count urls by day and generate a realtime report:
 
 More specific throttling
 
-   // throttle by url.  
-   // A url can only be visited 10 times in an hour
-   // hour on minute granularity
-   connect(
-     hook.middleware.throttle({
-       limit:  10,
-       buckets: 60,
-       seconds: 60,
-       prefix:  "ip"
-     }, function (req) { return req.url; })
-   );
+    // throttle by url.  
+    // A url can only be visited 10 times in an hour
+    // hour on minute granularity
+    connect(
+      hook.middleware.throttle({
+        limit:  10,
+        buckets: 60,
+        seconds: 60,
+        prefix:  "ip"
+      }, function (req) { return req.url; })
+    );
 
 RangeCounter API
 ================
@@ -103,11 +103,14 @@ Inputs:
   * prefix: the prefix used for keys in redis
 
 *counter.inc(key)*
+
 Increments counter for a specific key (eg. ip address, url)
 
 *counter.getCount(key)*
+
 Returns integer for the count of a key
 
 *counter.getCounts()*
+
 Returns a hash where the keys are the keys and the counts are the values.
 
