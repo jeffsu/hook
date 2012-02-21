@@ -51,8 +51,9 @@ export class RangeCounter {
     this.time       = secondsPerBucket || BUCKET_TIME;
     this.prefix     = prefix;
 
-    this.range     = this.maxBuckets * this.time;
-    this.rangeInMS = this.range * ONE_SEC;
+    this.range      = this.maxBuckets * this.time;
+    this.rangeInMS  = this.range * ONE_SEC;
+    this.expireInMS = (this.range + this.time) * ONE_SEC;
 
     this.currentIdx = null;
     this.buckets    = [ [{}, {}] ];
@@ -160,7 +161,7 @@ export class RangeCounter {
         history.push([ key, sync ]);
         var redisKey = this.prefix + ':' + key + ':' + (this.currentIdx - i).toString();
         commands.push([ 'INCRBY', redisKey, count ]);
-        expires.push([ 'EXPIRE', redisKey, this.rangeInMS ]);
+        expires.push([ 'EXPIRE', redisKey, this.expireInMS ]);
       }
     }
 
